@@ -1,0 +1,53 @@
+{
+    "name": "close-files",
+    "displayName": "close-files",
+    "description": "close files",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.41.0"
+    },
+    "categories": [
+        "Other"
+    ],
+    "repository": "https://github.com/ctf0/vscode-close-files",
+    "activationEvents": [
+        "onCommand:extension.close_non_dirty",
+        "onCommand:extension.close_folder_files"
+    ],
+    "main": "./extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "extension.close_non_dirty",
+                "title": "Close All Saved Files"
+            },
+            {
+                "command": "extension.close_folder_files",
+                "title": "Close Folder Files"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "when": "explorerResourceIsFolder",
+                    "command": "extension.close_folder_files",
+                    "group": "navigation"
+                }
+            ]
+        }
+    },
+    "scripts": {
+        "test": "node ./test/runTest.js"
+    },
+    "devDependencies": {
+        "@types/glob": "^7.1.1",
+        "@types/mocha": "^5.2.7",
+        "@types/node": "^12.11.7",
+        "@types/vscode": "^1.41.0",
+        "eslint": "^6.6.0",
+        "glob": "^7.1.5",
+        "mocha": "^6.2.2",
+        "typescript": "^3.6.4",
+        "vscode-test": "^1.2.2"
+    }
+}
