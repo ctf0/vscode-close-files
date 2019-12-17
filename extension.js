@@ -108,7 +108,6 @@ function loopOver(doc, list) {
         goNext()
     } else {
         vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-        goNext()
     }
 }
 

@@ -7,7 +7,3 @@
 ## Notes
 
 - until https://github.com/microsoft/vscode/issues/15178 is solved, we have to loop over all opened editors/files
-
-## Issues
-
-- doesnt behave well with groups
