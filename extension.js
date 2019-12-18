@@ -26,12 +26,12 @@ function activate(context) {
         let doc = vscode.window.activeTextEditor.document
         let name = doc.fileName
 
-        if (inFolder(name, folderPath)) {
-            loopOver(doc, folderDocs)
-        } else {
-            folderDocs.push(name)
-            goNext()
-        }
+        inFolderCheck(
+            name,
+            folderPath,
+            doc,
+            folderDocs
+        )
     })
 
     context.subscriptions.push(dirtyFiles, folderFiles)
@@ -65,33 +65,29 @@ function activate(context) {
             /* ------------------------------- dirty files ------------------------------ */
             if (dirtyLoop) {
                 // are we back to where we started ?
-                if (isFirstItem(name, dirtyDocs)) {
-                    dirtyDocs = []
-                    dirtyLoop = false
-
-                    return
+                if (!isFirstItem(name, dirtyDocs)) {
+                    return loopOver(doc, dirtyDocs)
                 }
 
-                loopOver(doc, dirtyDocs)
+                dirtyDocs = []
+                dirtyLoop = false
             }
 
             /* ------------------------------ folder files ------------------------------ */
             if (folderLoop) {
                 // are we back to where we started ?
-                if (isFirstItem(name, folderDocs)) {
-                    folderDocs = []
-                    folderPath = null
-                    folderLoop = false
-
-                    return
+                if (!isFirstItem(name, folderDocs)) {
+                    return inFolderCheck(
+                        name,
+                        folderPath,
+                        doc,
+                        folderDocs
+                    )
                 }
 
-                if (inFolder(name, folderPath)) {
-                    loopOver(doc, folderDocs)
-                } else {
-                    folderDocs.push(name)
-                    goNext()
-                }
+                folderDocs = []
+                folderPath = null
+                folderLoop = false
             }
         }
     })
@@ -99,12 +95,10 @@ function activate(context) {
 
 function loopOver(doc, list) {
     let name = doc.fileName
+    let dirty = doc.isDirty
 
-    if (doc.isDirty) {
-        if (!inList(name, list)) {
-            list.push(name)
-        }
-
+    if (dirty) {
+        list.push(name)
         goNext()
     } else {
         vscode.commands.executeCommand('workbench.action.closeActiveEditor')
@@ -115,16 +109,17 @@ function goNext() {
     vscode.commands.executeCommand('workbench.action.nextEditor')
 }
 
-function inList(item, list) {
-    return list.some((e) => e == item)
-}
-
 function isFirstItem(item, list) {
     return list.length && list[0] == item
 }
 
-function inFolder(name, path) {
-    return name.startsWith(path)
+function inFolderCheck(name, path, doc, list) {
+    if (!name.startsWith('Untitled') && name.startsWith(path)) {
+        loopOver(doc, list)
+    } else {
+        list.push(name)
+        goNext()
+    }
 }
 
 exports.activate = activate
