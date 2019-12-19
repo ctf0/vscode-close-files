@@ -35,6 +35,13 @@
                     "when": "explorerResourceIsFolder && editorIsOpen"
                 }
             ],
+            "editor/context": [
+                {
+                    "group": "navigation",
+                    "command": "extension.close_non_dirty",
+                    "when": "editorIsOpen"
+                }
+            ],
             "commandPalette": [
                 {
                     "command": "extension.close_non_dirty",
