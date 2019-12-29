@@ -9,9 +9,10 @@ function activate(context) {
     let dirtyDocs = []
     let dirtyLoop = false
 
-    const dirtyFiles = vscode.commands.registerCommand('extension.close_non_dirty', () => {
+    const dirtyFiles = vscode.commands.registerCommand('extension.close_non_dirty', async () => {
         dirtyLoop = true
-        loopOver(vscode.window.activeTextEditor.document, dirtyDocs)
+
+        return loopOver(vscode.window.activeTextEditor.document, dirtyDocs)
     })
 
     /* --------------------------- close_folder_files --------------------------- */
@@ -19,14 +20,14 @@ function activate(context) {
     let folderPath = null
     let folderLoop = false
 
-    const folderFiles = vscode.commands.registerCommand('extension.close_folder_files', (e) => {
+    const folderFiles = vscode.commands.registerCommand('extension.close_folder_files', async (e) => {
         folderLoop = true
         folderPath = e.fsPath
 
         let doc = vscode.window.activeTextEditor.document
         let name = doc.fileName
 
-        inFolderCheck(
+        await inFolderCheck(
             name,
             folderPath,
             doc,
@@ -56,7 +57,7 @@ function activate(context) {
         }
 
         // have files
-        if (e) {
+        else {
             clearTimeout(timmer)
 
             let doc = e.document
@@ -93,32 +94,32 @@ function activate(context) {
     })
 }
 
-function loopOver(doc, list) {
+async function loopOver(doc, list) {
     let name = doc.fileName
     let dirty = doc.isDirty
 
     if (dirty) {
         list.push(name)
-        goNext()
+        await goNext()
     } else {
-        vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 }
 
-function goNext() {
-    vscode.commands.executeCommand('workbench.action.nextEditor')
+async function goNext() {
+    return vscode.commands.executeCommand('workbench.action.nextEditor')
 }
 
 function isFirstItem(item, list) {
     return list.length && list[0] == item
 }
 
-function inFolderCheck(name, path, doc, list) {
+async function inFolderCheck(name, path, doc, list) {
     if (!name.startsWith('Untitled') && name.startsWith(path)) {
-        loopOver(doc, list)
+        await loopOver(doc, list)
     } else {
         list.push(name)
-        goNext()
+        await goNext()
     }
 }
 
