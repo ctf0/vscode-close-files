@@ -1,64 +1,56 @@
 const vscode = require('vscode')
 
+let dirtyDocs = []
+let dirtyLoop = false
+let folderDocs = []
+let folderPath = null
+let folderLoop = false
+
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
 
     /* ----------------------------- close_non_dirty ---------------------------- */
-    let dirtyDocs = []
-    let dirtyLoop = false
-
-    const dirtyFiles = vscode.commands.registerCommand('extension.close_non_dirty', async () => {
-        dirtyLoop = true
-
-        return loopOver(vscode.window.activeTextEditor.document, dirtyDocs)
-    })
+    context.subscriptions.push(
+        vscode.commands.registerCommand('extension.close_non_dirty', async () => {
+            dirtyLoop = true
+            await loopOver(vscode.window.activeTextEditor.document, dirtyDocs)
+        })
+    )
 
     /* --------------------------- close_folder_files --------------------------- */
-    let folderDocs = []
-    let folderPath = null
-    let folderLoop = false
+    context.subscriptions.push(
+        vscode.commands.registerCommand('extension.close_folder_files', async (e) => {
+            folderLoop = true
+            folderPath = e.fsPath
 
-    const folderFiles = vscode.commands.registerCommand('extension.close_folder_files', async (e) => {
-        folderLoop = true
-        folderPath = e.fsPath
-
-        let doc = vscode.window.activeTextEditor.document
-        let name = doc.fileName
-
-        await inFolderCheck(
-            name,
-            folderPath,
-            doc,
-            folderDocs
-        )
-    })
-
-    context.subscriptions.push(dirtyFiles, folderFiles)
+            await inFolderCheck(
+                folderPath,
+                vscode.window.activeTextEditor.document,
+                folderDocs
+            )
+        })
+    )
 
     /* ------------------------------- recurssion ------------------------------- */
-    let timmer
+    let timer
 
-    vscode.window.onDidChangeActiveTextEditor((e) => {
+    vscode.window.onDidChangeActiveTextEditor(async (e) => {
         // stop & reset all
         if (!e) {
-            clearTimeout(timmer)
+            clearTimeout(timer)
 
-            timmer = setTimeout(() => {
-                if (!vscode.window.visibleTextEditors.length && (dirtyLoop || folderLoop)) {
-                    dirtyDocs = []
-                    dirtyLoop = false
-                    folderDocs = []
-                    folderPath = null
-                    folderLoop = false
+            timer = setTimeout(() => {
+                if (!vscode.window.visibleTextEditors.length) {
+                    resetAll()
                 }
             }, 200)
         }
 
         // have files
         else {
-            clearTimeout(timmer)
+            clearTimeout(timer)
 
             let doc = e.document
             let name = doc.fileName
@@ -67,28 +59,27 @@ function activate(context) {
             if (dirtyLoop) {
                 // are we back to where we started ?
                 if (!isFirstItem(name, dirtyDocs)) {
-                    return loopOver(doc, dirtyDocs)
+                    await loopOver(doc, dirtyDocs)
+                } else {
+                    dirtyDocs = []
+                    dirtyLoop = false
                 }
-
-                dirtyDocs = []
-                dirtyLoop = false
             }
 
             /* ------------------------------ folder files ------------------------------ */
             if (folderLoop) {
                 // are we back to where we started ?
                 if (!isFirstItem(name, folderDocs)) {
-                    return inFolderCheck(
-                        name,
+                    await inFolderCheck(
                         folderPath,
                         doc,
                         folderDocs
                     )
+                } else {
+                    folderDocs = []
+                    folderPath = null
+                    folderLoop = false
                 }
-
-                folderDocs = []
-                folderPath = null
-                folderLoop = false
             }
         }
     })
@@ -114,13 +105,23 @@ function isFirstItem(item, list) {
     return list.length && list[0] == item
 }
 
-async function inFolderCheck(name, path, doc, list) {
-    if (!name.startsWith('Untitled') && name.startsWith(path)) {
+async function inFolderCheck(path, doc, list) {
+    let name = doc.fileName
+
+    if (!doc.isUntitled && name.startsWith(path)) {
         await loopOver(doc, list)
     } else {
         list.push(name)
         await goNext()
     }
+}
+
+function resetAll() {
+    dirtyDocs = []
+    dirtyLoop = false
+    folderDocs = []
+    folderPath = null
+    folderLoop = false
 }
 
 exports.activate = activate
