@@ -91,9 +91,10 @@ async function loopOver(doc, list) {
 
     if (dirty) {
         list.push(name)
-        await goNext()
+
+        return goNext()
     } else {
-        await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+        return vscode.commands.executeCommand('workbench.action.closeActiveEditor')
     }
 }
 

@@ -7,3 +7,4 @@
 ## Notes
 
 - until https://github.com/microsoft/vscode/issues/15178 is solved, we have to loop over all opened editors/files
+- for the extension to work as expected, you should add `"workbench.editor.focusRecentEditorAfterClose": false,` to ur settings.
