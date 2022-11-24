@@ -2,71 +2,75 @@
     "name": "close-files",
     "displayName": "Close Files",
     "description": "close files",
-    "version": "0.0.4",
+    "version": "0.1.0",
     "repository": "https://github.com/ctf0/vscode-close-files",
     "publisher": "ctf0",
     "engines": {
-        "vscode": "^1.41.0"
+        "vscode": "^1.68.0"
     },
     "categories": [
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.close_non_dirty",
-        "onCommand:extension.close_folder_files"
+        "onCommand:closeFiles.close_folder_files",
+        "onCommand:closeFiles.close_file_siblings"
     ],
     "main": "./extension.js",
     "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Close Files",
+            "properties": {
+                "closeFiles.closingType": {
+                    "type": "string",
+                    "default": "loose",
+                    "enum": [
+                        "loose",
+                        "strict"
+                    ],
+                    "enumDescriptions": [
+                        "close files with the same parent (this effects files in nested folders as well)",
+                        "close files with the exact parent (only sibling files will be closed without affecting nested files)"
+                    ]
+                }
+            }
+        },
         "commands": [
             {
-                "command": "extension.close_non_dirty",
-                "title": "Close All Saved Files"
+                "command": "closeFiles.close_folder_files",
+                "title": "Close Folder Files"
             },
             {
-                "command": "extension.close_folder_files",
-                "title": "Close Folder Files"
+                "command": "closeFiles.close_file_siblings",
+                "title": "Close File Siblings"
             }
         ],
         "menus": {
             "explorer/context": [
                 {
                     "group": "navigation",
-                    "command": "extension.close_folder_files",
+                    "command": "closeFiles.close_folder_files",
                     "when": "explorerResourceIsFolder && editorIsOpen"
-                }
-            ],
-            "editor/context": [
-                {
-                    "group": "navigation",
-                    "command": "extension.close_non_dirty",
-                    "when": "editorIsOpen"
                 }
             ],
             "commandPalette": [
                 {
-                    "command": "extension.close_non_dirty",
-                    "when": "editorIsOpen"
+                    "command": "closeFiles.close_folder_files",
+                    "when": "explorerResourceIsFolder && editorIsOpen"
                 },
                 {
-                    "command": "extension.close_folder_files",
-                    "when": "explorerResourceIsFolder && editorIsOpen"
+                    "command": "closeFiles.close_file_siblings",
+                    "when": "editorIsOpen"
                 }
             ]
         }
     },
-    "scripts": {
-        "test": "node ./test/runTest.js"
-    },
     "devDependencies": {
-        "@types/glob": "^7.1.1",
-        "@types/mocha": "^5.2.7",
-        "@types/node": "^12.11.7",
-        "@types/vscode": "^1.41.0",
-        "eslint": "^6.6.0",
-        "glob": "^7.1.5",
-        "mocha": "^6.2.2",
-        "typescript": "^3.6.4",
-        "vscode-test": "^1.2.2"
+        "@types/glob": "^8.0.0",
+        "@types/node": "^18.11.9",
+        "@types/vscode": "^1.68.0",
+        "glob": "^8.0.3",
+        "typescript": "^4.9.3"
     },
     "dependencies": {}
 }

@@ -1,128 +1,55 @@
 const vscode = require('vscode')
+const path   = require('path')
 
-let dirtyDocs = []
-let dirtyLoop = false
-let folderDocs = []
-let folderPath = null
-let folderLoop = false
+const PACKAGE_NAME = 'closeFiles'
+let config         = {}
 
-/**
- * @param {vscode.ExtensionContext} context
- */
 function activate(context) {
+    readConfig()
 
-    /* ----------------------------- close_non_dirty ---------------------------- */
-    context.subscriptions.push(
-        vscode.commands.registerCommand('extension.close_non_dirty', async () => {
-            dirtyLoop = true
-            await loopOver(vscode.window.activeTextEditor.document, dirtyDocs)
-        })
-    )
-
-    /* --------------------------- close_folder_files --------------------------- */
-    context.subscriptions.push(
-        vscode.commands.registerCommand('extension.close_folder_files', async (e) => {
-            folderLoop = true
-            folderPath = e.fsPath
-
-            await inFolderCheck(
-                folderPath,
-                vscode.window.activeTextEditor.document,
-                folderDocs
-            )
-        })
-    )
-
-    /* ------------------------------- recurssion ------------------------------- */
-    let timer
-
-    vscode.window.onDidChangeActiveTextEditor(async (e) => {
-        // stop & reset all
-        if (!e) {
-            clearTimeout(timer)
-
-            timer = setTimeout(() => {
-                if (!vscode.window.visibleTextEditors.length) {
-                    resetAll()
-                }
-            }, 200)
-        }
-
-        // have files
-        else {
-            clearTimeout(timer)
-
-            let doc = e.document
-            let name = doc.fileName
-
-            /* ------------------------------- dirty files ------------------------------ */
-            if (dirtyLoop) {
-                // are we back to where we started ?
-                if (!isFirstItem(name, dirtyDocs)) {
-                    await loopOver(doc, dirtyDocs)
-                } else {
-                    dirtyDocs = []
-                    dirtyLoop = false
-                }
-            }
-
-            /* ------------------------------ folder files ------------------------------ */
-            if (folderLoop) {
-                // are we back to where we started ?
-                if (!isFirstItem(name, folderDocs)) {
-                    await inFolderCheck(
-                        folderPath,
-                        doc,
-                        folderDocs
-                    )
-                } else {
-                    folderDocs = []
-                    folderPath = null
-                    folderLoop = false
-                }
-            }
+    vscode.workspace.onDidChangeConfiguration(async (e) => {
+        if (e.affectsConfiguration(PACKAGE_NAME)) {
+            readConfig()
         }
     })
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand(`${PACKAGE_NAME}.close_folder_files`, (e) => closeFolderFiles(e.fsPath)),
+        vscode.commands.registerCommand(`${PACKAGE_NAME}.close_file_siblings`, (e) => closeFileSiblings())
+    )
 }
 
-async function loopOver(doc, list) {
-    let name = doc.fileName
-    let dirty = doc.isDirty
-
-    if (dirty) {
-        list.push(name)
-
-        return goNext()
-    } else {
-        return vscode.commands.executeCommand('workbench.action.closeActiveEditor')
-    }
+function readConfig() {
+    config = vscode.workspace.getConfiguration(PACKAGE_NAME)
 }
 
-async function goNext() {
-    return vscode.commands.executeCommand('workbench.action.nextEditor')
+function closeFolderFiles(folderPath) {
+    return vscode.window.tabGroups.all
+        .flatMap((v) => v.tabs)
+        .filter((tab) => {
+            return tab.input !== undefined &&
+                tab.input instanceof vscode.TabInputText &&
+                tab.isDirty === false &&
+                checkForParentPath(folderPath, tab.input.uri.fsPath)
+        }).map((tab) => vscode.window.tabGroups.close(tab))
 }
 
-function isFirstItem(item, list) {
-    return list.length && list[0] == item
+function closeFileSiblings() {
+    let current = vscode.window.activeTextEditor.document?.fileName
+
+    return closeFolderFiles(path.dirname(current))
 }
 
-async function inFolderCheck(path, doc, list) {
-    let name = doc.fileName
-
-    if (!doc.isUntitled && name.startsWith(path)) {
-        await loopOver(doc, list)
-    } else {
-        list.push(name)
-        await goNext()
-    }
+function checkForParentPath(folderPath, docPath)
+{
+    return useStrictOption()
+        ? folderPath === path.dirname(docPath)
+        : docPath.startsWith(folderPath)
 }
 
-function resetAll() {
-    dirtyDocs = []
-    dirtyLoop = false
-    folderDocs = []
-    folderPath = null
-    folderLoop = false
+function useStrictOption()
+{
+    return config.closingType == 'strict'
 }
 
 exports.activate = activate
