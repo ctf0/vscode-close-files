@@ -23,25 +23,29 @@ function readConfig() {
     config = vscode.workspace.getConfiguration(PACKAGE_NAME)
 }
 
-function closeFolderFiles(folderPath) {
+function closeFolderFiles(folderPath, isFolder = true) {
     return vscode.window.tabGroups.all
         .flatMap((v) => v.tabs)
         .filter((tab) => {
             return tab.input !== undefined &&
                 tab.input instanceof vscode.TabInputText &&
                 tab.isDirty === false &&
-                checkForParentPath(folderPath, tab.input.uri.fsPath)
+                checkForParentPath(folderPath, tab.input.uri.fsPath, isFolder)
         }).map((tab) => vscode.window.tabGroups.close(tab))
 }
 
 function closeFileSiblings() {
     let current = vscode.window.activeTextEditor.document?.fileName
 
-    return closeFolderFiles(path.dirname(current))
+    return closeFolderFiles(path.dirname(current), false)
 }
 
-function checkForParentPath(folderPath, docPath)
+function checkForParentPath(folderPath, docPath, isFolder)
 {
+    if (isFolder) {
+        return docPath.startsWith(folderPath)
+    }
+
     return useStrictOption()
         ? folderPath === path.dirname(docPath)
         : docPath.startsWith(folderPath)

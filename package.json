@@ -2,7 +2,7 @@
     "name": "close-files",
     "displayName": "Close Files",
     "description": "close files",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "repository": "https://github.com/ctf0/vscode-close-files",
     "publisher": "ctf0",
     "engines": {
