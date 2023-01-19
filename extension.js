@@ -14,8 +14,8 @@ function activate(context) {
     })
 
     context.subscriptions.push(
-        vscode.commands.registerCommand(`${PACKAGE_NAME}.close_folder_files`, (e) => closeFolderFiles(e.fsPath)),
-        vscode.commands.registerCommand(`${PACKAGE_NAME}.close_file_siblings`, (e) => closeFileSiblings())
+        vscode.commands.registerCommand(`${PACKAGE_NAME}.close_folder_files`, async (e) => await closeFolderFiles(e.fsPath)),
+        vscode.commands.registerCommand(`${PACKAGE_NAME}.close_file_siblings`, async (e) => await closeFileSiblings())
     )
 }
 
@@ -23,18 +23,20 @@ function readConfig() {
     config = vscode.workspace.getConfiguration(PACKAGE_NAME)
 }
 
-function closeFolderFiles(folderPath, isFolder = true) {
-    return vscode.window.tabGroups.all
-        .flatMap((v) => v.tabs)
-        .filter((tab) => {
-            return tab.input !== undefined &&
-                tab.input instanceof vscode.TabInputText &&
-                tab.isDirty === false &&
-                checkForParentPath(folderPath, tab.input.uri.fsPath, isFolder)
-        }).map((tab) => vscode.window.tabGroups.close(tab))
+async function closeFolderFiles(folderPath, isFolder = true) {
+    return Promise.all(
+        vscode.window.tabGroups.all
+            .flatMap((v) => v.tabs)
+            .filter((tab) => {
+                return tab.input !== undefined &&
+                    tab.input instanceof vscode.TabInputText &&
+                    tab.isDirty === false &&
+                    checkForParentPath(folderPath, tab.input.uri.fsPath, isFolder)
+            }).map(async (tab) => await vscode.window.tabGroups.close(tab))
+    )
 }
 
-function closeFileSiblings() {
+async function closeFileSiblings() {
     let current = vscode.window.activeTextEditor.document?.fileName
 
     return closeFolderFiles(path.dirname(current), false)
